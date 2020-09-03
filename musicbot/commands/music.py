@@ -25,6 +25,26 @@ class Music(commands.Cog):
         if track.isspace() or not track:
             return
         await audiocontroller.add_youtube(track)
+        
+    @commands.command(name='loadList', description = config.HELP_YT_LONG, help = config.HELP_YT_SHORT)
+    async def _play_youtube_list(self, ctx, *, trackListAsStr: str):
+        tracks = trackListAsStr.split(',')
+        count = 0
+        for track in tracks:
+            print("Adding track: " + track)
+            current_guild = utils.get_guild(self.bot, ctx.message)
+
+            if current_guild is None:
+                await utils.send_message(ctx, config.NO_GUILD_MESSAGE)
+                return
+            audiocontroller = utils.guild_to_audiocontroller[current_guild]
+
+            if track.isspace() or not track:
+                return
+            await audiocontroller.add_youtube(track)
+            count = count + 1
+            
+        print("added : " + str(count) + " tracks.")
 
     @commands.command(name='pause', description= config.HELP_PAUSE_LONG, help = config.HELP_PAUSE_SHORT)
     async def _pause(self, ctx):

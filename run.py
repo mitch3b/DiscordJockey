@@ -28,8 +28,8 @@ async def on_ready():
         guild_to_audiocontroller[guild] = AudioController(bot, guild, DEFAULT_VOLUME)
         try:
             await guild_to_audiocontroller[guild].register_voice_channel(guild.voice_channels[0])
-        except:
-            print("could not join "+guild.name)
+        except Exception as inst:
+            print("could not join "+guild.name+" bc..."+inst)
         
     print(STARTUP_COMPLETE_MESSAGE)
 

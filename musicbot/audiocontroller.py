@@ -96,6 +96,7 @@ class AudioController(object):
         response = urllib.request.urlopen(link)
         soup = BeautifulSoup(response.read(), "html.parser")
         res = soup.find_all('a', {'class': 'pl-video-title-link'})
+
         for l in res:
             await self.add_song('https://www.youtube.com' + l.get("href"))
 
@@ -161,7 +162,7 @@ class AudioController(object):
         await self.guild.me.edit(nick=playing_string(extracted_info.get('title')))
         self.playlist.add_name(extracted_info.get('title'))
         
-        self.voice_client.play(discord.FFmpegPCMAudio(extracted_info['url']), after=lambda e: self.next_song(e))
+        self.voice_client.play(discord.FFmpegPCMAudio(extracted_info['url'], before_options='-t ' + str(config.MAX_SONG_DURATION)), after=lambda e: self.next_song(e))
         self.voice_client.source = discord.PCMVolumeTransformer(self.guild.voice_client.source)
         self.voice_client.source.volume = float(self.volume) / 100.0
 
