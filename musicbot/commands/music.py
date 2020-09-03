@@ -31,7 +31,8 @@ class Music(commands.Cog):
         tracks = trackListAsStr.split(',')
         count = 0
         for track in tracks:
-            print("Adding track: " + track)
+            count = count + 1
+            print("Adding track: " + track + " count: " + str(count) + "/" + str(len(tracks)))
             current_guild = utils.get_guild(self.bot, ctx.message)
 
             if current_guild is None:
@@ -42,7 +43,6 @@ class Music(commands.Cog):
             if track.isspace() or not track:
                 return
             await audiocontroller.add_youtube(track)
-            count = count + 1
             
         print("added : " + str(count) + " tracks.")
 

@@ -1,13 +1,16 @@
 import urllib
+import re 
 from string import printable
 
 import discord
 import youtube_dl
+import asyncio
 from bs4 import BeautifulSoup
 
 from config import config
 from musicbot.playlist import Playlist
 from musicbot.songinfo import Songinfo
+from musicbot.chatupdates import startSongChat
 
 
 def playing_string(title):
@@ -48,6 +51,7 @@ class AudioController(object):
         self.guild = guild
         self.voice_client = None
         self.infoMap = {}
+        self.songCount = 0
 
     @property
     def volume(self):
@@ -88,6 +92,7 @@ class AudioController(object):
     async def add_youtube(self, link):
         """Processes a youtube link and passes elements of a playlist to the add_song function one by one"""
 
+        print("adding youtube...")
         # Pass it on if it is not a playlist
         if not ("playlist?list=" in link):
             await self.add_song(link)
@@ -104,8 +109,10 @@ class AudioController(object):
     async def add_song(self, track):
         """Adds the track to the playlist instance and plays it, if it is the first song"""
 
+        print("adding song...")
         # If the track is a video title, get the corresponding video link first
-        if not ("watch?v=" in track):
+        
+        if not ("watch?v=" in track) and not ("https://youtu.be/" in track):
             link = self.convert_to_youtube_link('"' + track + '"')
             if link is None:
                 link = self.convert_to_youtube_link(track)
@@ -116,7 +123,7 @@ class AudioController(object):
         self.playlist.add(link)
         songInfo = await self.getExtractedInfo(track)
         self.infoMap[track] = songInfo
-        
+        print("gothere2...")
         if len(self.playlist.playque) == 1:
             await self.play_youtube(link)
 
@@ -166,16 +173,26 @@ class AudioController(object):
         
         # Update the songinfo to reflect the current song
         self.current_songinfo = self.infoMap[youtube_link];
+
+        self.current_songinfo.webpage_url
+        startTime = 0
+        if "t=" in youtube_link:
+            temp = youtube_link.split("t=")[1]
+            res = re.findall('\d+', temp) 
+            if len(res) > 0:
+                startTime = res[0]
         
-        print("playing song: " + self.current_songinfo.webpage_url)
+        print("playing song: " + youtube_link + " starting at: " + str(startTime))
 
         # Change the nickname to indicate, what song is currently playing
         await self.guild.me.edit(nick=playing_string(self.current_songinfo.title))
         self.playlist.add_name(self.current_songinfo.title)
         
-        self.voice_client.play(discord.FFmpegPCMAudio(self.current_songinfo.webpage_url, before_options='-t ' + str(config.MAX_SONG_DURATION)), after=lambda e: self.next_song(e))
+        self.voice_client.play(discord.FFmpegPCMAudio(self.current_songinfo.webpage_url, before_options='-ss ' + str(startTime) + ' -t ' + str(config.MAX_SONG_DURATION)), after=lambda e: self.next_song(e))
         self.voice_client.source = discord.PCMVolumeTransformer(self.guild.voice_client.source)
         self.voice_client.source.volume = float(self.volume) / 100.0
+        self.songCount = self.songCount + 1
+        # asyncio.create_task(startSongChat(self.songCount, self.current_songinfo))
 
     async def stop_player(self):
         """Stops the player and removes all songs from the queue"""
